@@ -1,0 +1,46 @@
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle-cache/
+**/build/
+
+# Logs
+*.log
+logs/
+*.out
+
+# Spring Boot
+target/
+*.iml
+
+# IDEs
+.idea/
+*.iws
+*.ipr
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
+
+# Node / React frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env.local
+frontend/.eslintcache
+
+# Docker
+**/.container/
+**/docker-compose.override.yml
+
+# System
+*.swp
+*.swo

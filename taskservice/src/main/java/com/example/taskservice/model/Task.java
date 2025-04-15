@@ -12,7 +12,6 @@ public class Task {
     private String title;
     private boolean completed;
 
-    // Constructeurs
     public Task() {
     }
 
@@ -20,8 +19,6 @@ public class Task {
         this.title = title;
         this.completed = false;
     }
-
-    // Getters & Setters
 
     public Long getId() {
         return id;
@@ -46,4 +43,4 @@ public class Task {
     public void setCompleted(boolean completed) {
         this.completed = completed;
     }
-}z
+}
