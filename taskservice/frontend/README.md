@@ -1,12 +1,102 @@
-# React + Vite
+# Todolist Microservice - Spring Boot + PostgreSQL + Docker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ce projet est un microservice simple de gestion de tâches (todolist) développé avec **Spring Boot**, connecté à **PostgreSQL**, et orchestré avec **Docker Compose**.
 
-Currently, two official plugins are available:
+## Fonctionnalités
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Ajouter une tâche
+- Lister toutes les tâches
+- Supprimer une tâche
+- API REST exposée sur `localhost:8080/tasks`
 
-## Expanding the ESLint configuration
+## Architecture
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Le projet repose sur deux services Docker :
+- `taskservice-app` : service Spring Boot exposant une API REST
+- `postgres-taskdb` : base de données PostgreSQL pour stocker les tâches
+
+Ces services communiquent via un réseau Docker interne (`springnet`).
+
+## Technologies
+
+- Java 17
+- Spring Boot 3.4.4
+- Spring Web + Spring Data JPA
+- PostgreSQL 15
+- Docker / Docker Compose
+- Gradle
+- React + Vite
+
+## Lancer le projet avec Docker Compose
+
+Assurez-vous d’avoir Docker et Docker Compose installés, puis exécutez :
+
+```bash
+docker-compose up --build
+```
+
+Le backend sera accessible à l’adresse :  
+http://localhost:8080/tasks
+
+## Lancer le frontend React
+
+Depuis le dossier `frontend`, exécutez :
+
+```bash
+npm install
+npm run dev
+```
+
+Cela démarre l’interface utilisateur sur :  
+http://localhost:5173/
+
+## Utiliser l'API REST avec `curl`
+
+Vous pouvez interagir avec l’API REST directement depuis un terminal avec les commandes suivantes :
+
+### 1. Récupérer toutes les tâches (GET)
+```bash
+curl http://localhost:8080/tasks
+```
+
+### 2. Ajouter une tâche (POST)
+```bash
+curl -X POST http://localhost:8080/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Ma nouvelle tâche"}'
+```
+
+### 3. Supprimer une tâche par son ID (DELETE)
+```bash
+curl -X DELETE http://localhost:8080/tasks/1
+```
+Remplacez `1` par l’ID réel de la tâche à supprimer.
+
+## Structure du projet
+
+```
+ProjetProgDistrib/
+├── taskservice/
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── build.gradle
+│   ├── src/
+│   │   └── main/
+│   │       ├── java/com/example/taskservice/
+│   │       │   ├── controller/TaskController.java
+│   │       │   ├── model/Task.java
+│   │       │   ├── repository/TaskRepository.java
+│   │       │   └── TaskserviceApplication.java
+│   │       └── resources/application.properties
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── TaskList.jsx
+│   │   ├── TaskForm.jsx
+│   │   └── main.jsx
+│   ├── public/index.html
+│   ├── vite.config.js
+│   └── package.json
+```
+
+Projet développé dans le cadre du module Programmation Distribuée avec Benoît Charroux

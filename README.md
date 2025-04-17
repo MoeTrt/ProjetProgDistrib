@@ -1,7 +1,8 @@
-# Todolist Microservice - Spring Boot + PostgreSQL + Docker
+# Todolist Microservice - Spring Boot + PostgreSQL + Docker + Kubernetes + Istio
 
-Ce projet est un microservice de gestion de tâches (todolist) développé en Java avec Spring Boot. Il expose une API REST permettant de créer, afficher et supprimer des tâches.  
-Il s’appuie sur une base de données PostgreSQL et utilise Docker et Docker Compose pour l’orchestration.
+Ce projet est un microservice de gestion de tâches (todolist) développé en Java avec Spring Boot.  
+Il expose une API REST permettant de créer, afficher et supprimer des tâches.  
+Il utilise une base de données PostgreSQL, Docker, Docker Compose, Kubernetes (Minikube) et Istio.
 
 ---
 
@@ -12,7 +13,8 @@ Il s’appuie sur une base de données PostgreSQL et utilise Docker et Docker Co
 - Marquer une tâche comme terminée (checkbox)
 - Supprimer une tâche
 - Frontend React minimaliste communiquant avec l’API
-- Base de données persistante grâce à Docker volumes
+- Base de données persistante avec volumes Docker
+- Déploiement dans Kubernetes + Service Mesh Istio
 
 ---
 
@@ -20,8 +22,8 @@ Il s’appuie sur une base de données PostgreSQL et utilise Docker et Docker Co
 
 ```
                     +------------------+
-                    |     Frontend     |
-                    |   (React + Vite) |
+                    |     Frontend      |
+                    |   (React + Vite)  |
                     +--------+---------+
                              |
                              | appels HTTP (fetch)
@@ -54,25 +56,28 @@ Il s’appuie sur une base de données PostgreSQL et utilise Docker et Docker Co
 
 - React
 - Vite
-- CSS natif (style simple, sans framework)
+- CSS natif
 
 ### DevOps
 
 - Docker
 - Docker Compose
+- Kubernetes (Minikube)
+- Istio Service Mesh
+- Docker Hub
 
 ---
 
-## Démarrage rapide
+## Démarrage rapide en local (Docker Compose)
 
 ### Prérequis
 
 - Docker installé
 - Port 8080 libre (backend)
 - Port 5432 libre (PostgreSQL)
-- Port 5173 libre (frontend)
+- Port 5173 libre (frontend React)
 
-### Lancement des services
+### Lancer l'application en local
 
 Depuis la racine du projet :
 
@@ -80,38 +85,98 @@ Depuis la racine du projet :
 docker-compose up --build
 ```
 
-Cela va :
-- Construire l’application Spring Boot (packagée dans un `.jar`)
-- Démarrer le conteneur PostgreSQL
-- Lancer le backend Spring sur `localhost:8080`
-- Lancer le frontend React sur `localhost:5173`
+Puis, pour le frontend React :
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Le frontend sera accessible sur `http://localhost:5173` et communiquera avec l'API sur `http://localhost:8080`.
 
 ---
 
-## API REST disponible
+## Utilisation de l'API REST avec curl
 
 ### Récupérer la liste des tâches
 
-```http
-GET /tasks
+```bash
+curl http://localhost:8080/tasks
 ```
 
 ### Ajouter une tâche
 
-```http
-POST /tasks
-Content-Type: application/json
-
-{
-  "title": "Faire les courses"
-}
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"title": "Faire les courses"}' http://localhost:8080/tasks
 ```
 
 ### Supprimer une tâche
 
-```http
-DELETE /tasks/{id}
+Remplacer `{id}` par l'identifiant de la tâche :
+
+```bash
+curl -X DELETE http://localhost:8080/tasks/{id}
 ```
+
+---
+
+## Déploiement Kubernetes + Istio
+
+### 1. Prérequis
+
+- Minikube installé (`minikube start --driver=docker`)
+- Istio installé (`istioctl install --set profile=demo -y`)
+- Activer l'injection automatique :
+
+```bash
+kubectl label namespace default istio-injection=enabled
+```
+
+### 2. Déploiement PostgreSQL
+
+Appliquer successivement :
+
+```bash
+kubectl apply -f postgres-secret.yaml
+kubectl apply -f postgres-storage.yaml
+kubectl apply -f postgres-deployment.yaml
+kubectl apply -f postgres-service.yaml
+```
+
+### 3. Déploiement du backend (Spring Boot)
+
+Taguer et push l'image Docker (exemple) :
+
+```bash
+docker tag taskservice-taskservice votreDockerID/taskservice:latest
+docker push votreDockerID/taskservice:latest
+```
+
+Puis déployer :
+
+```bash
+kubectl apply -f taskservice-deployment.yaml
+kubectl apply -f taskservice-service.yaml
+kubectl apply -f taskservice-gateway.yaml
+kubectl apply -f taskservice-virtualservice.yaml
+```
+
+### 4. Accéder au service
+
+Faire un port-forward vers Istio ingress gateway :
+
+```bash
+kubectl -n istio-system port-forward deployment/istio-ingressgateway 31380:8080
+```
+
+Puis accéder à l'API REST via :
+
+```
+http://localhost:31380/tasks
+```
+
+**Attention** : en Kubernetes, seul l'API est exposée ! Le frontend React doit être lancé manuellement avec `npm run dev`.
 
 ---
 
@@ -121,15 +186,14 @@ DELETE /tasks/{id}
 .
 ├── backend/
 │   ├── Dockerfile
-│   ├── src/
-│   │   └── main/java/com/example/taskservice/
-│   │       ├── controller/TaskController.java
-│   │       ├── model/Task.java
-│   │       └── repository/TaskRepository.java
+│   ├── src/main/java/com/example/taskservice/
+│   │   ├── controller/TaskController.java
+│   │   ├── model/Task.java
+│   │   └── repository/TaskRepository.java
 │   └── build.gradle
 │
 ├── frontend/
-│   ├── Dockerfile
+│   ├── Dockerfile (optionnel pour déploiement futur)
 │   ├── src/
 │   │   ├── App.jsx
 │   │   ├── TaskForm.jsx
@@ -137,42 +201,28 @@ DELETE /tasks/{id}
 │   │   └── index.css
 │   └── package.json
 │
+├── kubernetes/
+│   ├── postgres-secret.yaml
+│   ├── postgres-storage.yaml
+│   ├── postgres-deployment.yaml
+│   ├── postgres-service.yaml
+│   ├── taskservice-deployment.yaml
+│   ├── taskservice-service.yaml
+│   ├── taskservice-gateway.yaml
+│   ├── taskservice-virtualservice.yaml
+│
 ├── docker-compose.yml
 └── README.md
 ```
 
 ---
 
-## Déploiement Kubernetes (étape suivante possible)
+## Points importants
 
-Le projet peut être facilement adapté à un déploiement Kubernetes à l’aide de :
-- YAML de déploiement pour chaque microservice
-- Services de type `ClusterIP` ou `NodePort`
-- Ingress controller ou Spring Cloud Gateway pour le routage
-- Secrets et ConfigMaps pour la configuration
-
----
-
-## Commandes utiles
-
-### Nettoyer et reconstruire
-
-```bash
-docker-compose down
-docker-compose up --build
-```
-
-### Accéder à la base PostgreSQL depuis le conteneur
-
-```bash
-docker exec -it postgres-taskdb psql -U postgres -d tasksdb
-```
+- La base de données PostgreSQL utilise un Secret Kubernetes pour protéger le mot de passe.
+- Le stockage de la base est persistant avec un PersistentVolumeClaim.
+- Le backend utilise un VirtualService et une Gateway Istio pour le routage.
+- Le frontend React n'est pas encore déployé dans Kubernetes (optionnel).
+- L'API REST reste accessible en local via l'ingress Istio.
 
 ---
-
-## Améliorations possibles
-
-- Ajout de tests unitaires avec JUnit
-- Intégration Swagger/OpenAPI pour la documentation
-- Authentification utilisateur
-- Ajout d’échéances et de filtres sur les tâches  
